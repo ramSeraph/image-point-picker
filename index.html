@@ -267,8 +267,7 @@
             const fileName = document.getElementById('fileName');
             
             if (file && file.type.startsWith('image/')) {
-                window.history.replaceState({}, document.title, window.location.pathname);
-                fileName.textContent = "Image from URL";
+                fileName.textContent = file.name;
                 
                 const reader = new FileReader();
                 
@@ -406,15 +405,30 @@
                     const pixelX = Math.round((xOnImage / imageRect.width) * currentImage.naturalWidth);
                     const pixelY = Math.round((yOnImage / imageRect.height) * currentImage.naturalHeight);
                     
-                    // Check if the click is within the image bounds
-                    if (pixelX >= 0 && pixelX <= currentImage.naturalWidth && pixelY >= 0 && pixelY <= currentImage.naturalHeight) {
-                        // Add point to array
-                        pickedPoints.push([pixelX, pixelY]);
-                        
-                        // Redraw points and update display
-                        redrawPoints();
-                        updateCoordinatesDisplay();
+                    const proximityThreshold = 15; // Pixels
+                    let pointRemoved = false;
+
+                    // Check if a point is close to the double-click
+                    for (let i = 0; i < pickedPoints.length; i++) {
+                        const [pX, pY] = pickedPoints[i];
+                        const distance = Math.sqrt(Math.pow(pixelX - pX, 2) + Math.pow(pixelY - pY, 2));
+                        if (distance < proximityThreshold) {
+                            pickedPoints.splice(i, 1); // Remove the point
+                            pointRemoved = true;
+                            break; // Only remove one point at a time
+                        }
                     }
+
+                    if (!pointRemoved) {
+                        // If no point was removed, add a new one
+                        if (pixelX >= 0 && pixelX <= currentImage.naturalWidth && pixelY >= 0 && pixelY <= currentImage.naturalHeight) {
+                            pickedPoints.push([pixelX, pixelY]);
+                        }
+                    }
+                    
+                    // Redraw points and update display
+                    redrawPoints();
+                    updateCoordinatesDisplay();
                 });
             }
         }
@@ -432,36 +446,13 @@
             updateCoordinatesDisplay();
         }
 
-        function loadImageFromUrl(imagedata) {
-            const fileName = document.getElementById('fileName');
-            fileName.textContent = "Image from URL";
-
-            currentZoom = 1;
-            translateX = 0;
-            translateY = 0;
-            imageDisplay.innerHTML = `<div class="image-wrapper" id="imageWrapper"><img src="${imagedata}" alt="Selected image" class="selected-image" id="displayedImage"><div class="image-overlay" id="imageOverlay"></div></div>`;
-            currentImage = document.getElementById('displayedImage');
-            imageWrapper = document.getElementById('imageWrapper');
-            imageOverlay = document.getElementById('imageOverlay');
-            zoomControls.style.display = 'flex';
-            updateZoomDisplay();
-            addScrollZoomListener();
-            addPanListeners();
-            addPointPickingListener();
-            clearPoints();
-        }
+        
         
         clearBtn.addEventListener('click', function() {
             clearPoints();
         });
 
-        window.addEventListener('load', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const imageData = urlParams.get('imagedata');
-            if (imageData) {
-                loadImageFromUrl(imageData);
-            }
-        });
+        
     </script>
 </body>
 </html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Point Picker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 10px 0 0 0;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin: 10px 0 20px 0;
+        }
+        
+        .file-input-container {
+            margin: 0 10px 10px 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-input-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background-color: #0056b3;
+        }
+        
+        .image-container {
+            text-align: center;
+            border: 2px solid #eee;
+        }
+        
+        .selected-image {
+            width: 100%;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .no-image {
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .zoom-btn {
+            padding: 8px 16px;
+            margin: 0 5px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .zoom-btn:hover {
+            background-color: #1e7e34;
+        }
+        
+        .zoom-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .zoom-level {
+            font-weight: bold;
+            color: #333;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .file-name {
+            color: #666;
+            font-style: italic;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .coordinates-container {
+            margin: 10px;
+        }
+        
+        .coordinates-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .coordinates-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .clear-btn {
+            padding: 5px 12px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s;
+        }
+        
+        .clear-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .clear-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .coordinates-display {
+            width: 100%;
+            min-height: 60px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+            overflow-y: auto;
+        }
+        
+        .image-wrapper {
+            overflow: hidden;
+            width: 100%;
+            display: inline-block;
+            position: relative;
+            cursor: grab;
+        }
+        
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .point-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: red;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 3px rgba(0,0,0,0.5);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        
+        .image-wrapper.dragging {
+            cursor: grabbing;
+        }
+        
+        .selected-image {
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            transform-origin: center;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Point Picker</h1>
+        
+        <div class="file-input-container">
+            <input type="file" id="imageInput" class="file-input" accept="image/*">
+            <label for="imageInput" class="file-input-label">Choose Image File</label>
+            <span id="fileName" class="file-name"></span>
+            <div id="zoomControls" class="zoom-controls" style="display: none;">
+                <span id="zoomLevel" class="zoom-level">100%</span>
+            </div>
+        </div>
+        
+        <div class="coordinates-container">
+            <div class="coordinates-header">
+                <div class="coordinates-label">Picked Points:</div>
+                <button id="clearBtn" class="clear-btn" disabled>Clear Points</button>
+            </div>
+            <textarea id="coordinatesDisplay" class="coordinates-display" readonly>[]</textarea>
+        </div>
+        
+        <div class="image-container">
+            <div id="imageDisplay" class="no-image">
+                No image selected. Please choose an image file.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imageDisplay = document.getElementById('imageDisplay');
+        const zoomControls = document.getElementById('zoomControls');
+        const zoomLevel = document.getElementById('zoomLevel');
+        
+        let currentZoom = 1;
+        let currentImage = null;
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let translateX = 0;
+        let translateY = 0;
+        let imageWrapper = null;
+        let imageOverlay = null;
+        let pickedPoints = [];
+        const coordinatesDisplay = document.getElementById('coordinatesDisplay');
+        const clearBtn = document.getElementById('clearBtn');
+        
+        imageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const fileName = document.getElementById('fileName');
+            
+            if (file && file.type.startsWith('image/')) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+                fileName.textContent = file.name;
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    currentZoom = 1;
+                    translateX = 0;
+                    translateY = 0;
+                    imageDisplay.innerHTML = `<div class="image-wrapper" id="imageWrapper"><img src="${e.target.result}" alt="Selected image" class="selected-image" id="displayedImage"><div class="image-overlay" id="imageOverlay"></div></div>`;
+                    currentImage = document.getElementById('displayedImage');
+                    imageWrapper = document.getElementById('imageWrapper');
+                    imageOverlay = document.getElementById('imageOverlay');
+                    zoomControls.style.display = 'flex';
+                    updateZoomDisplay();
+                    addScrollZoomListener();
+                    addPanListeners();
+                    addPointPickingListener();
+                    clearPoints();
+                };
+                
+                reader.readAsDataURL(file);
+            } else if (file) {
+                fileName.textContent = file.name + ' (invalid format)';
+                imageDisplay.innerHTML = '<div class="no-image">Please select a valid image file.</div>';
+                zoomControls.style.display = 'none';
+                currentImage = null;
+            }
+        });
+        
+        function updateZoomDisplay() {
+            if (currentImage) {
+                currentImage.style.transform = `scale(${currentZoom}) translate(${translateX}px, ${translateY}px)`;
+                zoomLevel.textContent = `${Math.round(currentZoom * 100)}%`;
+                redrawPoints();
+            }
+        }
+        
+        function redrawPoints() {
+            if (!imageOverlay || !currentImage) return;
+            imageOverlay.innerHTML = '';
+
+            const imageRect = currentImage.getBoundingClientRect();
+            const wrapperRect = imageWrapper.getBoundingClientRect();
+
+            for (const point of pickedPoints) {
+                const [pixelX, pixelY] = point;
+
+                const xOnImage = (pixelX / currentImage.naturalWidth) * imageRect.width;
+                const yOnImage = (pixelY / currentImage.naturalHeight) * imageRect.height;
+
+                const xOnWrapper = xOnImage + (imageRect.left - wrapperRect.left);
+                const yOnWrapper = yOnImage + (imageRect.top - wrapperRect.top);
+
+                const dot = document.createElement('div');
+                dot.className = 'point-dot';
+                dot.style.left = xOnWrapper + 'px';
+                dot.style.top = yOnWrapper + 'px';
+                imageOverlay.appendChild(dot);
+            }
+        }
+        
+        function addScrollZoomListener() {
+            if (imageWrapper) {
+                imageWrapper.addEventListener('wheel', function(event) {
+                    event.preventDefault();
+                    
+                    const zoomStep = 0.1;
+                    const delta = event.deltaY;
+                    
+                    if (delta < 0) {
+                        // Scroll up - zoom in
+                        currentZoom += zoomStep;
+                        updateZoomDisplay();
+                    } else {
+                        // Scroll down - zoom out
+                        if (currentZoom > 0.25) {
+                            currentZoom = Math.max(0.25, currentZoom - zoomStep);
+                            updateZoomDisplay();
+                        }
+                    }
+                });
+            }
+        }
+        
+        function addPanListeners() {
+            if (imageWrapper && currentImage) {
+                imageWrapper.addEventListener('mousedown', function(e) {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    imageWrapper.classList.add('dragging');
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', function(e) {
+                    if (isDragging) {
+                        const panSensitivity = 1 / currentZoom;
+                        const deltaX = (e.clientX - startX) * panSensitivity;
+                        const deltaY = (e.clientY - startY) * panSensitivity;
+                        translateX += deltaX;
+                        translateY += deltaY;
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        updateZoomDisplay();
+                    }
+                });
+                
+                document.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        imageWrapper.classList.remove('dragging');
+                    }
+                });
+                
+                imageWrapper.addEventListener('mouseleave', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        imageWrapper.classList.remove('dragging');
+                    }
+                });
+            }
+        }
+        
+        function addPointPickingListener() {
+            if (imageWrapper && currentImage) {
+                imageWrapper.addEventListener('dblclick', function(e) {
+                    e.preventDefault();
+                    
+                    const imageRect = currentImage.getBoundingClientRect();
+                    
+                    // Calculate click position relative to the image
+                    const xOnImage = e.clientX - imageRect.left;
+                    const yOnImage = e.clientY - imageRect.top;
+                    
+                    // Calculate pixel coordinates relative to the original image
+                    const pixelX = Math.round((xOnImage / imageRect.width) * currentImage.naturalWidth);
+                    const pixelY = Math.round((yOnImage / imageRect.height) * currentImage.naturalHeight);
+                    
+                    // Check if the click is within the image bounds
+                    if (pixelX >= 0 && pixelX <= currentImage.naturalWidth && pixelY >= 0 && pixelY <= currentImage.naturalHeight) {
+                        // Add point to array
+                        pickedPoints.push([pixelX, pixelY]);
+                        
+                        // Redraw points and update display
+                        redrawPoints();
+                        updateCoordinatesDisplay();
+                    }
+                });
+            }
+        }
+        
+        function updateCoordinatesDisplay() {
+            coordinatesDisplay.value = JSON.stringify(pickedPoints);
+            clearBtn.disabled = pickedPoints.length === 0;
+        }
+        
+        function clearPoints() {
+            pickedPoints = [];
+            if (imageOverlay) {
+                imageOverlay.innerHTML = '';
+            }
+            updateCoordinatesDisplay();
+        }
+
+        function loadImageFromUrl(url) {
+            const fileName = document.getElementById('fileName');
+            fileName.textContent = url;
+
+            currentZoom = 1;
+            translateX = 0;
+            translateY = 0;
+            imageDisplay.innerHTML = `<div class="image-wrapper" id="imageWrapper"><img src="${url}" alt="Selected image" class="selected-image" id="displayedImage"><div class="image-overlay" id="imageOverlay"></div></div>`;
+            currentImage = document.getElementById('displayedImage');
+            imageWrapper = document.getElementById('imageWrapper');
+            imageOverlay = document.getElementById('imageOverlay');
+            zoomControls.style.display = 'flex';
+            updateZoomDisplay();
+            addScrollZoomListener();
+            addPanListeners();
+            addPointPickingListener();
+            clearPoints();
+        }
+        
+        clearBtn.addEventListener('click', function() {
+            clearPoints();
+        });
+
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const imageUrl = urlParams.get('image');
+            if (imageUrl) {
+                loadImageFromUrl(imageUrl);
+            }
+        });
+    </script>
+</body>
+</html>

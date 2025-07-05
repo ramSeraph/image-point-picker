@@ -306,10 +306,23 @@
         
         function redrawPoints() {
             if (!imageOverlay || !currentImage) return;
-            imageOverlay.innerHTML = '';
+            imageOverlay.innerHTML = ''; // Clear existing dots and lines
 
             const imageRect = currentImage.getBoundingClientRect();
             const wrapperRect = imageWrapper.getBoundingClientRect();
+
+            // Create SVG for lines
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("class", "line-overlay");
+            svg.style.position = "absolute";
+            svg.style.top = "0";
+            svg.style.left = "0";
+            svg.style.width = "100%";
+            svg.style.height = "100%";
+            imageOverlay.appendChild(svg);
+
+            let prevX = null;
+            let prevY = null;
 
             for (const point of pickedPoints) {
                 const [pixelX, pixelY] = point;
@@ -320,11 +333,27 @@
                 const xOnWrapper = xOnImage + (imageRect.left - wrapperRect.left);
                 const yOnWrapper = yOnImage + (imageRect.top - wrapperRect.top);
 
+                // Draw dot
                 const dot = document.createElement('div');
                 dot.className = 'point-dot';
                 dot.style.left = xOnWrapper + 'px';
                 dot.style.top = yOnWrapper + 'px';
                 imageOverlay.appendChild(dot);
+
+                // Draw line if there's a previous point
+                if (prevX !== null && prevY !== null) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", prevX);
+                    line.setAttribute("y1", prevY);
+                    line.setAttribute("x2", xOnWrapper);
+                    line.setAttribute("y2", yOnWrapper);
+                    line.setAttribute("stroke", "blue");
+                    line.setAttribute("stroke-width", "2");
+                    svg.appendChild(line);
+                }
+
+                prevX = xOnWrapper;
+                prevY = yOnWrapper;
             }
         }
         

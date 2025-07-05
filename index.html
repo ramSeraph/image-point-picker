@@ -268,7 +268,7 @@
             
             if (file && file.type.startsWith('image/')) {
                 window.history.replaceState({}, document.title, window.location.pathname);
-                fileName.textContent = file.name;
+                fileName.textContent = "Image from URL";
                 
                 const reader = new FileReader();
                 
@@ -432,14 +432,14 @@
             updateCoordinatesDisplay();
         }
 
-        function loadImageFromUrl(url) {
+        function loadImageFromUrl(imagedata) {
             const fileName = document.getElementById('fileName');
-            fileName.textContent = url;
+            fileName.textContent = "Image from URL";
 
             currentZoom = 1;
             translateX = 0;
             translateY = 0;
-            imageDisplay.innerHTML = `<div class="image-wrapper" id="imageWrapper"><img src="${url}" alt="Selected image" class="selected-image" id="displayedImage"><div class="image-overlay" id="imageOverlay"></div></div>`;
+            imageDisplay.innerHTML = `<div class="image-wrapper" id="imageWrapper"><img src="${imagedata}" alt="Selected image" class="selected-image" id="displayedImage"><div class="image-overlay" id="imageOverlay"></div></div>`;
             currentImage = document.getElementById('displayedImage');
             imageWrapper = document.getElementById('imageWrapper');
             imageOverlay = document.getElementById('imageOverlay');
@@ -457,9 +457,9 @@
 
         window.addEventListener('load', () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const imageUrl = urlParams.get('image');
-            if (imageUrl) {
-                loadImageFromUrl(imageUrl);
+            const imageData = urlParams.get('imagedata');
+            if (imageData) {
+                loadImageFromUrl(imageData);
             }
         });
     </script>
